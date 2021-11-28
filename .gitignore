@@ -1,4 +1,5 @@
 build/
+build*/
 deps/.bootstrap.json
 deps/archives/
 deps/src/

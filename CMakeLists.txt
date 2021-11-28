@@ -51,7 +51,7 @@ if(WIN32)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
 
-#include_directories(deps/src/vulkan/include)
+include_directories(deps/src/vulkan/include)
 
 add_subdirectory(deps/src/glfw)
 if(BUILD_WITH_OPTICK)
@@ -136,8 +136,6 @@ set_property(TARGET SPVRemapper   PROPERTY FOLDER "ThirdPartyLibraries/glslang")
 add_subdirectory(shared)
 
 target_sources(SharedUtils PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/deps/src/glslang/StandAlone/ResourceLimits.cpp)
-
-add_subdirectory(Chapter1/2_CMake)
 
 add_subdirectory(Chapter2/01_GLFW)
 add_subdirectory(Chapter2/02_GLM)
