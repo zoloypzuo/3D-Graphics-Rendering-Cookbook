@@ -2,7 +2,7 @@
 
 project(Chapter4)
 
-include(../../CMake/CommonMacros.txt)
+include(../../CMake/CommonMacros.cmake)
 
 SETUP_APP(Ch4_SampleGL01_Camera "Chapter 04")
 

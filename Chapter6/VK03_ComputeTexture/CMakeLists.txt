@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 
 project(Chapter6)
 
-include(../../CMake/CommonMacros.txt)
+include(../../CMake/CommonMacros.cmake)
 
 include_directories(../../deps/src/vulkan/include)
 

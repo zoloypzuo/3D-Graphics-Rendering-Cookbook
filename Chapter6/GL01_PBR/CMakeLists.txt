@@ -2,7 +2,7 @@
 
 project(Chapter6)
 
-include(../../CMake/CommonMacros.txt)
+include(../../CMake/CommonMacros.cmake)
 
 SETUP_APP(Ch6_SampleGL01_PBR "Chapter 06")
 

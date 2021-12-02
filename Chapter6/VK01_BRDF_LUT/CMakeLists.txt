@@ -2,7 +2,7 @@
 
 project(Chapter6)
 
-include(../../CMake/CommonMacros.txt)
+include(../../CMake/CommonMacros.cmake)
 
 include_directories(../../deps/src/imgui)
 include_directories(../../deps/src/vulkan/include)
