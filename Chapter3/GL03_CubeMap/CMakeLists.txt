@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 
 project(Chapter3)
 
-include(../../CMake/CommonMacros.txt)
+include(../../CMake/CommonMacros.cmake)
 
 SETUP_APP(Ch3_SampleGL03_CubeMap "Chapter 03")
 

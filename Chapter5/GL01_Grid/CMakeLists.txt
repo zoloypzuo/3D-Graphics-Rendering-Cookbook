@@ -2,7 +2,7 @@
 
 project(Chapter5)
 
-include(../../CMake/CommonMacros.txt)
+include(../../CMake/CommonMacros.cmake)
 
 SETUP_APP(Ch5_SampleGL01_Grid "Chapter 05")
 

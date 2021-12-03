@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 
 project(Chapter2)
 
-include(../../CMake/CommonMacros.txt)
+include(../../CMake/CommonMacros.cmake)
 
 SETUP_APP(Ch2_Sample07_AssImp "Chapter 02")
 
