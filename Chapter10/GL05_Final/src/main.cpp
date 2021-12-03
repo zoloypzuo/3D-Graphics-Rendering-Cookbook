@@ -15,8 +15,6 @@
 #include "Chapter9/GLMesh9.h"
 #include "Chapter10/GLSkyboxRenderer.h"
 
-#include <tracy/Tracy.hpp>
-
 struct PerFrameData
 {
 	mat4 view;
@@ -355,7 +353,6 @@ int main(void)
 
 		// cull
 		{
-			ZoneScoped;
 			*numVisibleMeshesPtr = 0;
 			programCulling.useProgram();
 			glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
@@ -381,7 +378,6 @@ int main(void)
 		// 1. Render shadow map
 		if (g_EnableShadows)
 		{
-			ZoneScoped;
 			glDisable(GL_BLEND);
 			glEnable(GL_DEPTH_TEST);
 			// Calculate light parameters
@@ -412,13 +408,11 @@ int main(void)
 		// 1.1 Bistro
 		if (g_DrawOpaque)
 		{
-			ZoneScoped;
 			program.useProgram();
 			mesh.draw(meshesOpaque.drawCommands_.size(), &meshesOpaque);
 		}
 		if (g_DrawGrid)
 		{
-			ZoneScoped;
 			glEnable(GL_BLEND);
 			progGrid.useProgram();
 			glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, 1, 0);
@@ -426,7 +420,6 @@ int main(void)
 		}
 		if (g_DrawBoxes)
 		{
-			ZoneScoped;
 			DrawElementsIndirectCommand* cmd = mesh.bufferIndirect_.drawCommands_.data();
 			for (const auto& c : sceneData.shapes_)
 				drawBox3dGL(canvas, mat4(1.0f), sceneData.meshData_.boxes_[c.meshIndex], vec4(0, 1, 0, 1));
@@ -434,7 +427,6 @@ int main(void)
 		drawBox3dGL(canvas, mat4(1.0f), bigBox, vec4(1, 1, 1, 1));
 		if (g_DrawTransparent)
 		{
-			ZoneScoped;
 			glBindImageTexture(0, oitHeads.getHandle(), 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 			glDepthMask(GL_FALSE);
 			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -449,7 +441,6 @@ int main(void)
 			renderCameraFrustumGL(canvas, g_CullingView, proj, vec4(1, 1, 0, 1), 100);
 		if (g_EnableShadows && g_ShowLightFrustum)
 		{
-			ZoneScoped;
 			renderCameraFrustumGL(canvas, lightView, lightProj, vec4(1, 0, 0, 1), 100);
 			canvas.line(vec3(0.0f), lightDir * 100.0f, vec4(0, 0, 1, 1));
 		}
@@ -458,7 +449,6 @@ int main(void)
 		// SSAO
 		if (g_EnableSSAO)
 		{
-			ZoneScoped;
 			glDisable(GL_DEPTH_TEST);
 			glClearNamedFramebufferfv(ssao.getHandle(), GL_COLOR, 0, glm::value_ptr(vec4(0.0f, 0.0f, 0.0f, 1.0f)));
 			glNamedBufferSubData(perFrameDataBuffer.getHandle(), 0, sizeof(g_SSAOParams), &g_SSAOParams);
@@ -470,7 +460,6 @@ int main(void)
 			ssao.unbind();
 			if (g_EnableBlur)
 			{
-				ZoneScoped;
 				// Blur X
 				blur.bind();
 				progBlurX.useProgram();
@@ -511,7 +500,6 @@ int main(void)
 		// pass HDR params to shaders
 		if (g_EnableHDR)
 		{
-			ZoneScoped;
 			glNamedBufferSubData(perFrameDataBuffer.getHandle(), 0, sizeof(g_HDRParams), &g_HDRParams);
 			// 2.1 Downscale and convert to luminance
 			luminance.bind();
@@ -565,7 +553,6 @@ int main(void)
 
 		// wait for compute shader results to become visible
 		if (g_EnableGPUCulling && fenceCulling) {
-			ZoneScoped;
 			for (;;) {
 				const GLenum res = glClientWaitSync(fenceCulling, GL_SYNC_FLUSH_COMMANDS_BIT, 1000);
 				if (res == GL_ALREADY_SIGNALED || res == GL_CONDITION_SATISFIED) break;
@@ -573,80 +560,76 @@ int main(void)
 			glDeleteSync(fenceCulling);
 		}
 
-		{
-			ZoneScoped;
-			glViewport(0, 0, width, height);
+		glViewport(0, 0, width, height);
 
-			const float indentSize = 16.0f;
-			ImGuiIO& io = ImGui::GetIO();
-			io.DisplaySize = ImVec2((float)width, (float)height);
-			ImGui::NewFrame();
-			ImGui::Begin("Control", nullptr);
-			ImGui::Text("Transparency:");
-			ImGui::Indent(indentSize);
-			ImGui::Checkbox("Opaque meshes", &g_DrawOpaque);
-			ImGui::Checkbox("Transparent meshes", &g_DrawTransparent);
-			ImGui::Unindent(indentSize);
-			ImGui::Separator();
-			ImGui::Text("GPU culling:");
-			ImGui::Indent(indentSize);
-			ImGui::Checkbox("Enable GPU culling", &g_EnableGPUCulling);
-			imGuiPushFlagsAndStyles(g_EnableGPUCulling);
-			ImGui::Checkbox("Freeze culling frustum (P)", &g_FreezeCullingView);
-			ImGui::Text("Visible meshes: %i", *numVisibleMeshesPtr);
-			imGuiPopFlagsAndStyles();
-			ImGui::Unindent(indentSize);
-			ImGui::Separator();
-			ImGui::Text("SSAO:");
-			ImGui::Indent(indentSize);
-			ImGui::Checkbox("Enable SSAO", &g_EnableSSAO);
-			imGuiPushFlagsAndStyles(g_EnableSSAO);
-			ImGui::Checkbox("Enable SSAO blur", &g_EnableBlur);
-			ImGui::SliderFloat("SSAO scale", &g_SSAOParams.scale_, 0.0f, 2.0f);
-			ImGui::SliderFloat("SSAO bias", &g_SSAOParams.bias_, 0.0f, 0.3f);
-			ImGui::SliderFloat("SSAO radius", &g_SSAOParams.radius, 0.02f, 0.2f);
-			ImGui::SliderFloat("SSAO attenuation scale", &g_SSAOParams.attScale, 0.5f, 1.5f);
-			ImGui::SliderFloat("SSAO distance scale", &g_SSAOParams.distScale, 0.0f, 1.0f);
-			imGuiPopFlagsAndStyles();
-			ImGui::Unindent(indentSize);
-			ImGui::Separator();
-			ImGui::Text("HDR:");
-			ImGui::Indent(indentSize);
-			ImGui::Checkbox("Enable HDR", &g_EnableHDR);
-			imGuiPushFlagsAndStyles(g_EnableHDR);
-			ImGui::SliderFloat("Exposure", &g_HDRParams.exposure_, 0.1f, 2.0f);
-			ImGui::SliderFloat("Max white", &g_HDRParams.maxWhite_, 0.5f, 2.0f);
-			ImGui::SliderFloat("Bloom strength", &g_HDRParams.bloomStrength_, 0.0f, 2.0f);
-			ImGui::SliderFloat("Adaptation speed", &g_HDRParams.adaptationSpeed_, 0.01f, 0.5f);
-			imGuiPopFlagsAndStyles();
-			ImGui::Unindent(indentSize);
-			ImGui::Separator();
-			ImGui::Text("Shadows:");
-			ImGui::Indent(indentSize);
-			ImGui::Checkbox("Enable shadows", &g_EnableShadows);
-			imGuiPushFlagsAndStyles(g_EnableShadows);
-			ImGui::Checkbox("Show light's frustum (red) and scene AABB (white)", &g_ShowLightFrustum);
-			ImGui::SliderFloat("Light Theta", &g_LightTheta, -85.0f, +85.0f);
-			ImGui::SliderFloat("Light Phi", &g_LightPhi, -85.0f, +85.0f);
-			imGuiPopFlagsAndStyles();
-			ImGui::Unindent(indentSize);
-			ImGui::Separator();
-			ImGui::Checkbox("Grid", &g_DrawGrid);
-			ImGui::Checkbox("Bounding boxes (all)", &g_DrawBoxes);
-			ImGui::End();
-			if (g_EnableSSAO)
-				imguiTextureWindowGL("SSAO", ssao.getTextureColor().getHandle());
-			if (g_EnableShadows)
-				imguiTextureWindowGL("Shadow Map", shadowMap.getTextureDepth().getHandle());
-			ImGui::Render();
-			rendererUI.render(width, height, ImGui::GetDrawData());
-		}
+		const float indentSize = 16.0f;
+		ImGuiIO& io = ImGui::GetIO();
+		io.DisplaySize = ImVec2((float)width, (float)height);
+		ImGui::NewFrame();
+		ImGui::Begin("Control", nullptr);
+		ImGui::Text("Transparency:");
+		ImGui::Indent(indentSize);
+		ImGui::Checkbox("Opaque meshes", &g_DrawOpaque);
+		ImGui::Checkbox("Transparent meshes", &g_DrawTransparent);
+		ImGui::Unindent(indentSize);
+		ImGui::Separator();
+		ImGui::Text("GPU culling:");
+		ImGui::Indent(indentSize);
+		ImGui::Checkbox("Enable GPU culling", &g_EnableGPUCulling);
+		imGuiPushFlagsAndStyles(g_EnableGPUCulling);
+		ImGui::Checkbox("Freeze culling frustum (P)", &g_FreezeCullingView);
+		ImGui::Text("Visible meshes: %i", *numVisibleMeshesPtr);
+		imGuiPopFlagsAndStyles();
+		ImGui::Unindent(indentSize);
+		ImGui::Separator();
+		ImGui::Text("SSAO:");
+		ImGui::Indent(indentSize);
+		ImGui::Checkbox("Enable SSAO", &g_EnableSSAO);
+		imGuiPushFlagsAndStyles(g_EnableSSAO);
+		ImGui::Checkbox("Enable SSAO blur", &g_EnableBlur);
+		ImGui::SliderFloat("SSAO scale", &g_SSAOParams.scale_, 0.0f, 2.0f);
+		ImGui::SliderFloat("SSAO bias", &g_SSAOParams.bias_, 0.0f, 0.3f);
+		ImGui::SliderFloat("SSAO radius", &g_SSAOParams.radius, 0.02f, 0.2f);
+		ImGui::SliderFloat("SSAO attenuation scale", &g_SSAOParams.attScale, 0.5f, 1.5f);
+		ImGui::SliderFloat("SSAO distance scale", &g_SSAOParams.distScale, 0.0f, 1.0f);
+		imGuiPopFlagsAndStyles();
+		ImGui::Unindent(indentSize);
+		ImGui::Separator();
+		ImGui::Text("HDR:");
+		ImGui::Indent(indentSize);
+		ImGui::Checkbox("Enable HDR", &g_EnableHDR);
+		imGuiPushFlagsAndStyles(g_EnableHDR);
+		ImGui::SliderFloat("Exposure", &g_HDRParams.exposure_, 0.1f, 2.0f);
+		ImGui::SliderFloat("Max white", &g_HDRParams.maxWhite_, 0.5f, 2.0f);
+		ImGui::SliderFloat("Bloom strength", &g_HDRParams.bloomStrength_, 0.0f, 2.0f);
+		ImGui::SliderFloat("Adaptation speed", &g_HDRParams.adaptationSpeed_, 0.01f, 0.5f);
+		imGuiPopFlagsAndStyles();
+		ImGui::Unindent(indentSize);
+		ImGui::Separator();
+		ImGui::Text("Shadows:");
+		ImGui::Indent(indentSize);
+		ImGui::Checkbox("Enable shadows", &g_EnableShadows);
+		imGuiPushFlagsAndStyles(g_EnableShadows);
+		ImGui::Checkbox("Show light's frustum (red) and scene AABB (white)", &g_ShowLightFrustum);
+		ImGui::SliderFloat("Light Theta", &g_LightTheta, -85.0f, +85.0f);
+		ImGui::SliderFloat("Light Phi", &g_LightPhi, -85.0f, +85.0f);
+		imGuiPopFlagsAndStyles();
+		ImGui::Unindent(indentSize);
+		ImGui::Separator();
+		ImGui::Checkbox("Grid", &g_DrawGrid);
+		ImGui::Checkbox("Bounding boxes (all)", &g_DrawBoxes);
+		ImGui::End();
+		if (g_EnableSSAO)
+			imguiTextureWindowGL("SSAO", ssao.getTextureColor().getHandle());
+		if (g_EnableShadows)
+			imguiTextureWindowGL("Shadow Map", shadowMap.getTextureDepth().getHandle());
+		ImGui::Render();
+		rendererUI.render(width, height, ImGui::GetDrawData());
+
 		// swap current and adapter luminances
 		std::swap(luminances[0], luminances[1]);
 
 		app.swapBuffers();
-
-		FrameMark;
 	}
 
 	glUnmapNamedBuffer(numVisibleMeshesBuffer.getHandle());

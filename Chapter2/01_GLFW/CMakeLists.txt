@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 
 project(Chapter2)
 
-include(../../CMake/CommonMacros.cmake)
+include(../../CMake/CommonMacros.txt)
 
 SETUP_APP(Ch2_Sample01_GLFW "Chapter 02")
 

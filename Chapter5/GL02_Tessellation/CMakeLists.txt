@@ -2,7 +2,7 @@
 
 project(Chapter5)
 
-include(../../CMake/CommonMacros.cmake)
+include(../../CMake/CommonMacros.txt)
 
 SETUP_APP(Ch5_SampleGL02_Tessellation "Chapter 05")
 

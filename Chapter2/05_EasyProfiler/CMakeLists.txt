@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 
 project(Chapter2)
 
-include(../../CMake/CommonMacros.cmake)
+include(../../CMake/CommonMacros.txt)
 
 include_directories(../../deps/src/easy_profiler/include)
 
