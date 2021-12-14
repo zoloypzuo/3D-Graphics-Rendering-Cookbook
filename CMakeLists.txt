@@ -76,24 +76,20 @@ add_library(glad ${GLAD_SOURCES})
 
 set_property(TARGET glfw          PROPERTY FOLDER "ThirdPartyLibraries")
 set_property(TARGET assimp        PROPERTY FOLDER "ThirdPartyLibraries")
-set_property(TARGET EtcLib        PROPERTY FOLDER "ThirdPartyLibraries")
-set_property(TARGET EtcTool       PROPERTY FOLDER "ThirdPartyLibraries")
+#set_property(TARGET EtcLib        PROPERTY FOLDER "ThirdPartyLibraries")
+#set_property(TARGET EtcTool       PROPERTY FOLDER "ThirdPartyLibraries")
 set_property(TARGET glad          PROPERTY FOLDER "ThirdPartyLibraries")
 #set_property(TARGET IrrXML        PROPERTY FOLDER "ThirdPartyLibraries")
 set_property(TARGET meshoptimizer PROPERTY FOLDER "ThirdPartyLibraries")
 if(WIN32)
 #set_property(TARGET zlib          PROPERTY FOLDER "ThirdPartyLibraries")
-set_property(TARGET zlibstatic    PROPERTY FOLDER "ThirdPartyLibraries")
-set_property(TARGET UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTY FOLDER "ThirdPartyLibraries")
+#set_property(TARGET zlibstatic    PROPERTY FOLDER "ThirdPartyLibraries")
+#set_property(TARGET UpdateAssimpLibsDebugSymbolsAndDLLs PROPERTY FOLDER "ThirdPartyLibraries")
 endif()
 set_property(TARGET uninstall     PROPERTY FOLDER "ThirdPartyLibraries")
 
 # shared utils code for GL and Vulkan
 add_subdirectory(shared)
-
-add_subdirectory(Chapter3/GL01_APIWrapping)
-add_subdirectory(Chapter3/GL02_VtxPulling)
-add_subdirectory(Chapter3/GL03_CubeMap)
 
 add_subdirectory(Chapter4/GL01_Camera)
 add_subdirectory(Chapter4/GL02_FPS)
@@ -104,7 +100,6 @@ add_subdirectory(Chapter5/GL03_MeshRenderer)
 add_subdirectory(Chapter5/MeshConvert)
 
 add_subdirectory(Chapter6/GL01_PBR)
-add_subdirectory(Chapter6/Util01_FilterEnvmap)
 
 add_subdirectory(Chapter7/GL01_LargeScene)
 add_subdirectory(Chapter7/SceneConverter)
