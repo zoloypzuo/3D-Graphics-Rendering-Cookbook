@@ -16,11 +16,3 @@ target_link_libraries(Ch7_Tool01_SceneConverter PRIVATE SharedUtils meshoptimize
 if(UNIX)
 	target_link_libraries(Ch7_Tool01_SceneConverter PRIVATE tbb)
 endif()
-
-if(BUILD_WITH_EASY_PROFILER)
-	target_link_libraries(Ch7_Tool01_SceneConverter PRIVATE easy_profiler)
-endif()
-
-if(BUILD_WITH_OPTICK)
-	target_link_libraries(Ch7_Tool01_SceneConverter PRIVATE OptickCore)
-endif()
