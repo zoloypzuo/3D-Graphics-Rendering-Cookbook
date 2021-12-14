@@ -3,3 +3,6 @@ deps/.bootstrap.json
 deps/archives/
 deps/src/
 imgui.ini
+
+.idea/
+cmake-build-debug/
