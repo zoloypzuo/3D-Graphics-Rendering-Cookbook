@@ -171,7 +171,7 @@ void processLods(std::vector<uint32_t>& indices, std::vector<float>& vertices, s
 
 	uint8_t LOD = 1;
 
-	printf("\n   LOD0: %i indices", int(indices.size()));
+//	printf("\n   LOD0: %i indices", int(indices.size()));
 
 	outLods.push_back(indices);
 
@@ -211,7 +211,7 @@ void processLods(std::vector<uint32_t>& indices, std::vector<float>& vertices, s
 
 		meshopt_optimizeVertexCache(indices.data(), indices.data(), indices.size(), verticesCountIn);
 
-		printf("\n   LOD%i: %i indices %s", int(LOD), int(numOptIndices), sloppy ? "[sloppy]" : "");
+//		printf("\n   LOD%i: %i indices %s", int(LOD), int(numOptIndices), sloppy ? "[sloppy]" : "");
 
 		LOD++;
 
@@ -279,7 +279,7 @@ Mesh convertAIMesh(const aiMesh* m, const SceneConfig& cfg)
 	else
 		processLods(srcIndices, srcVertices, outLods);
 
-	printf("\nCalculated LOD count: %u\n", (unsigned)outLods.size());
+//	printf("\nCalculated LOD count: %u\n", (unsigned)outLods.size());
 
 	uint32_t numIndices = 0;
 
@@ -589,7 +589,7 @@ void processScene(const SceneConfig& cfg)
 
 	for (unsigned int i = 0; i != scene->mNumMeshes; i++)
 	{
-		printf("\nConverting meshes %u/%u...", i + 1, scene->mNumMeshes);
+//		printf("\nConverting meshes %u/%u...", i + 1, scene->mNumMeshes);
 		Mesh mesh = convertAIMesh(scene->mMeshes[i], cfg);
 		g_MeshData.meshes_.push_back(mesh);
 	}
