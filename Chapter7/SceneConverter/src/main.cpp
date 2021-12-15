@@ -30,7 +30,6 @@
 
 namespace fs = std::filesystem;
 
-MeshData g_MeshData;
 
 uint32_t g_indexOffset = 0;
 uint32_t g_vertexOffset = 0;
@@ -216,7 +215,7 @@ void processLods(std::vector<uint32_t>& indices, std::vector<float>& vertices, s
 	}
 }
 
-Mesh convertAIMesh(const aiMesh* m, const SceneConfig& cfg)
+Mesh convertAIMesh(MeshData &g_MeshData,const aiMesh* m, const SceneConfig& cfg)
 {
 	const bool hasTexCoords = m->HasTextureCoords(0);
 	const auto streamElementSize = static_cast<uint32_t>(g_numElementsToStore * sizeof(float));
@@ -545,81 +544,88 @@ std::vector<SceneConfig> readConfigFile(const char* cfgFileName)
 
 void processScene(const SceneConfig& cfg)
 {
-	// clear mesh data from previous scene
-	g_MeshData.meshes_.clear();
-	g_MeshData.boxes_.clear();
-	g_MeshData.indexData_.clear();
-	g_MeshData.vertexData_.clear();
+    // extract base model path
+    const std::size_t pathSeparator = cfg.fileName.find_last_of("/\\");
+    const std::string basePath = (pathSeparator != std::string::npos) ? cfg.fileName.substr(0, pathSeparator + 1) : std::string();
 
-	g_indexOffset = 0;
-	g_vertexOffset = 0;
+    const unsigned int flags = 0 |
+                               aiProcess_JoinIdenticalVertices |
+                               aiProcess_Triangulate |
+                               aiProcess_GenSmoothNormals |
+                               aiProcess_LimitBoneWeights |
+                               aiProcess_SplitLargeMeshes |
+                               aiProcess_ImproveCacheLocality |
+                               aiProcess_RemoveRedundantMaterials |
+                               aiProcess_FindDegenerates |
+                               aiProcess_FindInvalidData |
+                               aiProcess_GenUVCoords;
 
-	// extract base model path
-	const std::size_t pathSeparator = cfg.fileName.find_last_of("/\\");
-	const std::string basePath = (pathSeparator != std::string::npos) ? cfg.fileName.substr(0, pathSeparator + 1) : std::string();
+    printf("Loading scene from '%s'...\n", cfg.fileName.c_str());
 
-	const unsigned int flags = 0 |
-		aiProcess_JoinIdenticalVertices |
-		aiProcess_Triangulate |
-		aiProcess_GenSmoothNormals |
-		aiProcess_LimitBoneWeights |
-		aiProcess_SplitLargeMeshes |
-		aiProcess_ImproveCacheLocality |
-		aiProcess_RemoveRedundantMaterials |
-		aiProcess_FindDegenerates |
-		aiProcess_FindInvalidData |
-		aiProcess_GenUVCoords;
+    const aiScene* scene = aiImportFile(cfg.fileName.c_str(), flags);
 
-	printf("Loading scene from '%s'...\n", cfg.fileName.c_str());
+    {
+        MeshData g_MeshData;
 
-	const aiScene* scene = aiImportFile(cfg.fileName.c_str(), flags);
+        // clear mesh data from previous scene
+        g_MeshData.meshes_.clear();
+        g_MeshData.boxes_.clear();
+        g_MeshData.indexData_.clear();
+        g_MeshData.vertexData_.clear();
 
-	if (!scene || !scene->HasMeshes())
-	{
-		printf("Unable to load '%s'\n", cfg.fileName.c_str());
-		exit(EXIT_FAILURE);
-	}
+        g_indexOffset = 0;
+        g_vertexOffset = 0;
 
-	// 1. Mesh conversion as in Chapter 5
-	g_MeshData.meshes_.reserve(scene->mNumMeshes);
-	g_MeshData.boxes_.reserve(scene->mNumMeshes);
 
-	for (unsigned int i = 0; i != scene->mNumMeshes; i++)
-	{
-//		printf("\nConverting meshes %u/%u...", i + 1, scene->mNumMeshes);
-		Mesh mesh = convertAIMesh(scene->mMeshes[i], cfg);
-		g_MeshData.meshes_.push_back(mesh);
-	}
+        if (!scene || !scene->HasMeshes())
+        {
+            printf("Unable to load '%s'\n", cfg.fileName.c_str());
+            exit(EXIT_FAILURE);
+        }
 
-	recalculateBoundingBoxes(g_MeshData);
+        // 1. Mesh conversion as in Chapter 5
+        g_MeshData.meshes_.reserve(scene->mNumMeshes);
+        g_MeshData.boxes_.reserve(scene->mNumMeshes);
 
-	saveMeshData(cfg.outputMesh.c_str(), g_MeshData);
+        for (unsigned int i = 0; i != scene->mNumMeshes; i++)
+        {
+    //		printf("\nConverting meshes %u/%u...", i + 1, scene->mNumMeshes);
+            Mesh mesh = convertAIMesh(g_MeshData, scene->mMeshes[i], cfg);
+            g_MeshData.meshes_.push_back(mesh);
+        }
+
+        recalculateBoundingBoxes(g_MeshData);
+
+        saveMeshData(cfg.outputMesh.c_str(), g_MeshData);
+    }
 
 	Scene ourScene;
 
 	// 2. Material conversion
-	std::vector<MaterialDescription> materials;
-	std::vector<std::string>& materialNames = ourScene.materialNames_;
+    {
+        std::vector<MaterialDescription> materials;
+        std::vector<std::string>& materialNames = ourScene.materialNames_;
 
-	std::vector<std::string> files;
-	std::vector<std::string> opacityMaps;
+        std::vector<std::string> files;
+        std::vector<std::string> opacityMaps;
 
-	for (unsigned int m = 0 ; m < scene->mNumMaterials ; m++)
-	{
-		aiMaterial* mm = scene->mMaterials[m];
+        for (unsigned int m = 0 ; m < scene->mNumMaterials ; m++)
+        {
+            aiMaterial* mm = scene->mMaterials[m];
 
-		printf("Material [%s] %u\n", mm->GetName().C_Str(), m);
-		materialNames.emplace_back(mm->GetName().C_Str());
+            printf("Material [%s] %u\n", mm->GetName().C_Str(), m);
+            materialNames.emplace_back(mm->GetName().C_Str());
 
-		MaterialDescription D = convertAIMaterialToDescription(mm, files, opacityMaps);
-		materials.push_back(D);
-		//dumpMaterial(files, D);
-	}
+            MaterialDescription D = convertAIMaterialToDescription(mm, files, opacityMaps);
+            materials.push_back(D);
+            //dumpMaterial(files, D);
+        }
 
-	// 3. Texture processing, rescaling and packing
-	convertAndDownscaleAllTextures(materials, basePath, files, opacityMaps);
+        // 3. Texture processing, rescaling and packing
+        convertAndDownscaleAllTextures(materials, basePath, files, opacityMaps);
 
-	saveMaterials(cfg.outputMaterials.c_str(), materials, files);
+        saveMaterials(cfg.outputMaterials.c_str(), materials, files);
+    }
 
 	// 4. Scene hierarchy conversion
 	traverse(scene, ourScene, scene->mRootNode, -1, 0);
