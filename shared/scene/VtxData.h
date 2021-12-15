@@ -91,4 +91,4 @@ void saveMeshData(const char* fileName, const MeshData& m);
 void recalculateBoundingBoxes(MeshData& m);
 
 // Combine a list of meshes to a single mesh container
-MeshFileHeader mergeMeshData(MeshData& m, const std::vector<MeshData*> md);
+MeshFileHeader mergeMeshData(MeshData& m, std::vector<MeshData*> md);
