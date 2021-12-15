@@ -9,9 +9,9 @@
 #include <assimp/pbrmaterial.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <rapidjson/rapidjson.h>
 #include <rapidjson/istreamwrapper.h>
 #include <rapidjson/document.h>
-#include <rapidjson/rapidjson.h>
 
 #include "shared/scene/VtxData.h"
 
@@ -84,8 +84,8 @@ MaterialDescription convertAIMaterialToDescription(const aiMaterial* M, std::vec
 
 	if (aiGetMaterialColor(M, AI_MATKEY_COLOR_TRANSPARENT, &Color) == AI_SUCCESS)
 	{
-		const float Opacity = std::max(std::max(Color.r, Color.g), Color.b);
-		D.transparencyFactor_ = glm::clamp(Opacity, 0.0f, 1.0f);
+		const float opacity = std::max(std::max(Color.r, Color.g), Color.b);
+		D.transparencyFactor_ = glm::clamp(opacity, 0.0f, 1.0f);
 		if (D.transparencyFactor_ >= 1.0f - opaquenessThreshold) D.transparencyFactor_ = 0.0f;
 		D.alphaTest_ = 0.5f;
 	}
@@ -114,7 +114,7 @@ MaterialDescription convertAIMaterialToDescription(const aiMaterial* M, std::vec
 	{
 		D.albedoMap_ = addUnique(files, Path.C_Str());
 		const std::string albedoMap = std::string(Path.C_Str());
-		if (albedoMap.find("grey_30") != albedoMap.npos)
+		if (albedoMap.find("grey_30") != std::string::npos)
 			D.flags_ |= sMaterialFlags_Transparent;
 	}
 
@@ -179,9 +179,7 @@ void processLods(std::vector<uint32_t>& indices, std::vector<float>& vertices, s
 	{
 		targetIndicesCount = indices.size() / 2;
 
-		bool sloppy = false;
-
-		size_t numOptIndices = meshopt_simplify(
+        size_t numOptIndices = meshopt_simplify(
 			indices.data(),
 			indices.data(), (uint32_t)indices.size(),
 			vertices.data(), verticesCountIn,
@@ -200,8 +198,7 @@ void processLods(std::vector<uint32_t>& indices, std::vector<float>& vertices, s
 					vertices.data(), verticesCountIn,
 					sizeof(float) * 3,
 					targetIndicesCount, 0.02f, nullptr);
-				sloppy = true;
-				if (numOptIndices == indices.size()) break;
+                if (numOptIndices == indices.size()) break;
 			}
 			else
 				break;
@@ -222,7 +219,7 @@ void processLods(std::vector<uint32_t>& indices, std::vector<float>& vertices, s
 Mesh convertAIMesh(const aiMesh* m, const SceneConfig& cfg)
 {
 	const bool hasTexCoords = m->HasTextureCoords(0);
-	const uint32_t streamElementSize = static_cast<uint32_t>(g_numElementsToStore * sizeof(float));
+	const auto streamElementSize = static_cast<uint32_t>(g_numElementsToStore * sizeof(float));
 
 	Mesh result = {
 		.streamCount = 1,
@@ -285,8 +282,8 @@ Mesh convertAIMesh(const aiMesh* m, const SceneConfig& cfg)
 
 	for (size_t l = 0 ; l < outLods.size() ; l++)
 	{
-		for (size_t i = 0 ; i < outLods[l].size() ; i++)
-			g_MeshData.indexData_.push_back(outLods[l][i]);
+		for (unsigned int i : outLods[l])
+			g_MeshData.indexData_.push_back(i);
 
 		result.lodOffset[l] = numIndices;
 		numIndices += (int)outLods[l].size();
@@ -334,16 +331,16 @@ void traverse(const aiScene* sourceScene, Scene& scene, aiNode* N, int parent, i
 	{
 		makePrefix(ofs); printf("Node[%d].name = %s\n", newNode, N->mName.C_Str());
 
-		uint32_t stringID = (uint32_t)scene.names_.size();
-		scene.names_.push_back(std::string(N->mName.C_Str()));
+		auto stringID = (uint32_t)scene.names_.size();
+		scene.names_.emplace_back(N->mName.C_Str());
 		scene.nameForNode_[newNode] = stringID;
 	}
 
 	for (size_t i = 0; i < N->mNumMeshes ; i++)
 	{
-		int newSubNode = addNode(scene, newNode, ofs + 1);;
+		int newSubNode = addNode(scene, newNode, ofs + 1);
 
-		uint32_t stringID = (uint32_t)scene.names_.size();
+		auto stringID = (uint32_t)scene.names_.size();
 		scene.names_.push_back(std::string(N->mName.C_Str()) + "_Mesh_" + std::to_string(i));
 		scene.nameForNode_[newSubNode] = stringID;
 
@@ -430,7 +427,7 @@ std::string convertTexture(const std::string& file, const std::string& basePath,
 	const int maxNewHeight = 512;
 
 	const auto srcFile = replaceAll(basePath + file, "\\",  "/");
-	const auto newFile = std::string("data/out_textures/") + lowercaseString(replaceAll(replaceAll(srcFile, "..", "__"), "/", "__") + std::string("__rescaled")) + std::string(".png");
+	auto newFile = std::string("data/out_textures/") + lowercaseString(replaceAll(replaceAll(srcFile, "..", "__"), "/", "__") + std::string("__rescaled")) + std::string(".png");
 
 	// load this image
 	int texWidth, texHeight, texChannels;
@@ -612,7 +609,7 @@ void processScene(const SceneConfig& cfg)
 		aiMaterial* mm = scene->mMaterials[m];
 
 		printf("Material [%s] %u\n", mm->GetName().C_Str(), m);
-		materialNames.push_back(std::string(mm->GetName().C_Str()));
+		materialNames.emplace_back(mm->GetName().C_Str());
 
 		MaterialDescription D = convertAIMaterialToDescription(mm, files, opacityMaps);
 		materials.push_back(D);
