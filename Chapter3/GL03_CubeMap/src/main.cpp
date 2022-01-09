@@ -92,14 +92,6 @@ int main(void)
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 
-	const aiScene* scene = aiImportFile("data/rubber_duck/scene.gltf", aiProcess_Triangulate);
-
-	if (!scene || !scene->HasMeshes())
-	{
-		printf("Unable to load data/rubber_duck/scene.gltf\n");
-		exit(255);
-	}
-
 	struct VertexData
 	{
 		vec3 pos;
@@ -107,59 +99,11 @@ int main(void)
 		vec2 tc;
 	};
 
-	const aiMesh* mesh = scene->mMeshes[0];
-	std::vector<VertexData> vertices;
-	for (unsigned i = 0; i != mesh->mNumVertices; i++)
-	{
-		const aiVector3D v = mesh->mVertices[i];
-		const aiVector3D n = mesh->mNormals[i];
-		const aiVector3D t = mesh->mTextureCoords[0][i];
-		vertices.push_back({ .pos = vec3(v.x, v.z, v.y), .n = vec3(n.x, n.y, n.z), .tc = vec2(t.x, t.y) });
-	}
-	std::vector<unsigned int> indices;
-	for (unsigned i = 0; i != mesh->mNumFaces; i++)
-	{
-		for (unsigned j = 0; j != 3; j++)
-			indices.push_back(mesh->mFaces[i].mIndices[j]);
-	}
-	aiReleaseImport(scene);
-
-	const size_t kSizeIndices = sizeof(unsigned int) * indices.size();
-	const size_t kSizeVertices = sizeof(VertexData) * vertices.size();
-
-	// indices
-	GLuint dataIndices;
-	glCreateBuffers(1, &dataIndices);
-	glNamedBufferStorage(dataIndices, kSizeIndices, indices.data(), 0);
 	GLuint vao;
 	glCreateVertexArrays(1, &vao);
 	glBindVertexArray(vao);
-	glVertexArrayElementBuffer(vao, dataIndices);
-
-	// vertices
-	GLuint dataVertices;
-	glCreateBuffers(1, &dataVertices);
-	glNamedBufferStorage(dataVertices, kSizeVertices, vertices.data(), 0);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, dataVertices);
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-	// texture
-	GLuint texture;
-	{
-		int w, h, comp;
-		const uint8_t* img = stbi_load("data/rubber_duck/textures/Duck_baseColor.png", &w, &h, &comp, 3);
-
-		glCreateTextures(GL_TEXTURE_2D, 1, &texture);
-		glTextureParameteri(texture, GL_TEXTURE_MAX_LEVEL, 0);
-		glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTextureStorage2D(texture, 1, GL_RGB8, w, h);
-		glTextureSubImage2D(texture, 0, 0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, img);
-		glBindTextures(0, 1, &texture);
-
-		stbi_image_free((void*)img);
-	}
 
 	// cube map
 	GLuint cubemapTex;
@@ -206,14 +150,6 @@ int main(void)
 		const mat4 p = glm::perspective(45.0f, ratio, 0.1f, 1000.0f);
 
 		{
-			const mat4 m = glm::rotate(glm::translate(mat4(1.0f), vec3(0.0f, -0.5f, -1.5f)), (float)glfwGetTime(), vec3(0.0f, 1.0f, 0.0f));
-			const PerFrameData perFrameData = { .model = m, .mvp = p * m, .cameraPos = vec4(0.0f) };
-			glNamedBufferSubData(perFrameDataBuffer, 0, kUniformBufferSize, &perFrameData);
-			progModel.useProgram();
-			glDrawElements(GL_TRIANGLES, static_cast<unsigned>(indices.size()), GL_UNSIGNED_INT, nullptr);
-		}
-
-		{
 			const mat4 m = glm::scale(mat4(1.0f), vec3(2.0f));
 			const PerFrameData perFrameData = { .model = m, .mvp = p * m, .cameraPos = vec4(0.0f) };
 			glNamedBufferSubData(perFrameDataBuffer, 0, kUniformBufferSize, &perFrameData);
@@ -225,9 +161,6 @@ int main(void)
 		glfwPollEvents();
 	}
 
-	glDeleteBuffers(1, &dataIndices);
-	glDeleteBuffers(1, &dataVertices);
-	glDeleteBuffers(1, &perFrameDataBuffer);
 	glDeleteVertexArrays(1, &vao);
 
 	glfwDestroyWindow(window);
