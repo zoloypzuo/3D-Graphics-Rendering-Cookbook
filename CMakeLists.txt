@@ -91,6 +91,10 @@ set_property(TARGET uninstall     PROPERTY FOLDER "ThirdPartyLibraries")
 # shared utils code for GL and Vulkan
 add_subdirectory(shared)
 
+add_subdirectory(Chapter2/08_ETC2Comp)
+
+add_subdirectory(Chapter3/GL03_CubeMap)
+
 add_subdirectory(Chapter4/GL01_Camera)
 add_subdirectory(Chapter4/GL02_FPS)
 
